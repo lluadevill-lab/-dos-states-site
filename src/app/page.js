@@ -185,7 +185,7 @@ export default function App() {
               <label className="text-[10px] opacity-40 block">ENDEREÇO DE ENTREGA</label>
               <input className="manifest-input" placeholder="Rua, Número, Complemento" value={profile.address} onChange={e => setProfile({...profile, address: e.target.value})} />
               <label className="text-[10px] opacity-40 block">CIDADE / ESTADO</label>
-              <input className="manifest-input" placeholder="Rio de Janeiro - RJ" value={profile.city} onChange={e => setProfile({...profile, city: e.target.value})} />
+              <input className="manifest-input" placeholder="São Paulo - SP" value={profile.city} onChange={e => setProfile({...profile, city: e.target.value})} />
               <button className="btn primary w-full mt-6" onClick={async () => {
                  await supabase.from('profiles').upsert({ id: user.id, ...profile });
                  alert('Dados salvos com sucesso!');
@@ -215,7 +215,7 @@ export default function App() {
       </main>
 
       <footer className="py-20 text-center mono text-[10px] opacity-30 uppercase tracking-[0.4em]">
-        DOS STATES — MIAMI ⇄ RIO DE JANEIRO
+        DOS STATES — EUA ⇄ BRASIL
       </footer>
     </div>
   );
