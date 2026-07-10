@@ -25,8 +25,16 @@ export async function PUT(request) {
     return NextResponse.json({ error: 'Dados incompletos.' }, { status: 400 })
   }
 
+  const update = { status: body.status }
+  // A mensagem de envio (rastreio, transportadora, prazo etc.) é opcional e
+  // só faz sentido guardar quando o admin manda algo — não sobrescreve com
+  // vazio se o campo não vier na requisição.
+  if (typeof body.shipping_message === 'string') {
+    update.shipping_message = body.shipping_message
+  }
+
   const supabaseAdmin = getSupabaseAdmin()
-  const { error } = await supabaseAdmin.from('orders').update({ status: body.status }).eq('id', body.id)
+  const { error } = await supabaseAdmin.from('orders').update(update).eq('id', body.id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
   return NextResponse.json({ success: true })

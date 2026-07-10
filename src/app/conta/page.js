@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { Star } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { formatBRL, orderDisplayCode } from '../../lib/format'
@@ -16,19 +17,132 @@ const STATUS_LABELS = {
   via_whatsapp: 'Combinando via WhatsApp',
 }
 
+function ReviewForm({ orderItem, onDone }) {
+  const [rating, setRating] = useState(5)
+  const [comment, setComment] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const submit = async () => {
+    setSaving(true)
+    setError('')
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch('/api/reviews', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ order_item_id: orderItem.id, rating, comment }),
+    })
+    const data = await res.json()
+    setSaving(false)
+    if (!res.ok) {
+      setError(data.error || 'Não foi possível enviar sua avaliação.')
+      return
+    }
+    onDone()
+  }
+
+  return (
+    <div className="mt-2 border border-line rounded-sm p-3 bg-paperDim">
+      <p className="text-xs font-semibold uppercase tracking-wide mb-2">Avaliar {orderItem.product_name}</p>
+      <div className="flex gap-1 mb-3">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button key={n} onClick={() => setRating(n)} aria-label={`${n} estrelas`}>
+            <Star size={20} className={n <= rating ? 'fill-stamp text-stamp' : 'text-line'} />
+          </button>
+        ))}
+      </div>
+      <textarea
+        className="input-field w-full text-sm"
+        rows={3}
+        placeholder="Conte como foi sua experiência com o produto (opcional)"
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+      />
+      {error && <p className="text-xs text-stamp mt-2">{error}</p>}
+      <button disabled={saving} onClick={submit} className="btn-primary text-xs mt-3">
+        {saving ? 'Enviando…' : 'Enviar avaliação'}
+      </button>
+    </div>
+  )
+}
+
+function OrderCard({ order, onReviewed }) {
+  const [reviewingItemId, setReviewingItemId] = useState(null)
+
+  return (
+    <div className="border border-line rounded-sm p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="font-mono text-sm font-semibold">{orderDisplayCode(order.id)}</p>
+          <p className="text-xs text-muted">{new Date(order.created_at).toLocaleDateString('pt-BR')}</p>
+        </div>
+        <span className="stamp-badge">{STATUS_LABELS[order.status] || order.status}</span>
+        <p className="font-mono font-semibold">{formatBRL(order.total)}</p>
+      </div>
+
+      <ul className="text-sm text-muted list-disc list-inside mt-2">
+        {(order.order_items || []).map((it) => (
+          <li key={it.id}>{it.quantity}× {it.product_name}</li>
+        ))}
+      </ul>
+
+      {order.shipping_message && (order.status === 'enviado' || order.status === 'entregue') && (
+        <div className="mt-3 text-xs bg-paperDim border border-line rounded-sm p-3 whitespace-pre-wrap">
+          <span className="font-semibold uppercase tracking-wide text-[10px] block mb-1">Informações de entrega</span>
+          {order.shipping_message}
+        </div>
+      )}
+
+      {order.status === 'entregue' && (
+        <div className="mt-3 flex flex-col gap-2">
+          {(order.order_items || []).map((it) => {
+            const alreadyReviewed = (it.reviews || []).length > 0
+            if (alreadyReviewed) {
+              return (
+                <p key={it.id} className="text-xs text-muted italic">
+                  Você já avaliou {it.product_name}. Obrigado!
+                </p>
+              )
+            }
+            if (reviewingItemId === it.id) {
+              return (
+                <ReviewForm
+                  key={it.id}
+                  orderItem={it}
+                  onDone={() => { setReviewingItemId(null); onReviewed() }}
+                />
+              )
+            }
+            return (
+              <button
+                key={it.id}
+                onClick={() => setReviewingItemId(it.id)}
+                className="btn-outline text-xs w-fit"
+              >
+                Avaliar {it.product_name}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function ContaPage() {
   const { user, loading, signOut } = useAuth()
   const [orders, setOrders] = useState([])
   const [ordersLoading, setOrdersLoading] = useState(true)
 
-  useEffect(() => {
+  const loadOrders = () => {
     if (!user) {
       setOrdersLoading(false)
       return
     }
+    setOrdersLoading(true)
     supabase
       .from('orders')
-      .select('id, created_at, status, total, payment_method')
+      .select('id, created_at, status, total, payment_method, shipping_message, order_items(id, product_name, quantity, reviews(id))')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
@@ -36,7 +150,9 @@ export default function ContaPage() {
         setOrders(data || [])
         setOrdersLoading(false)
       })
-  }, [user])
+  }
+
+  useEffect(() => { loadOrders() }, [user])
 
   if (loading) {
     return <div className="max-w-container mx-auto px-4 md:px-8 py-24 text-center text-muted">Carregando…</div>
@@ -73,14 +189,7 @@ export default function ContaPage() {
       ) : (
         <div className="flex flex-col gap-3">
           {orders.map((o) => (
-            <div key={o.id} className="border border-line rounded-sm p-4 flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="font-mono text-sm font-semibold">{orderDisplayCode(o.id)}</p>
-                <p className="text-xs text-muted">{new Date(o.created_at).toLocaleDateString('pt-BR')}</p>
-              </div>
-              <span className="stamp-badge">{STATUS_LABELS[o.status] || o.status}</span>
-              <p className="font-mono font-semibold">{formatBRL(o.total)}</p>
-            </div>
+            <OrderCard key={o.id} order={o} onReviewed={loadOrders} />
           ))}
         </div>
       )}
