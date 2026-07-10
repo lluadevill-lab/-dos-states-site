@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
+import { attachRatings } from '../../lib/ratings'
 import ProductCard from '../../components/ProductCard'
 
 export const revalidate = 60
@@ -13,7 +14,7 @@ async function getProducts(categoria) {
     console.error('Erro ao buscar produtos:', error.message)
     return []
   }
-  return data || []
+  return attachRatings(data || [])
 }
 
 async function getCategorias() {

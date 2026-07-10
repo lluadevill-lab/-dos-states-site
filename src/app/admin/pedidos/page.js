@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { Download } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 import { formatBRL, orderDisplayCode } from '../../../lib/format'
+import { customerWhatsappLink } from '../../../lib/whatsapp'
 
 const STATUS_OPTIONS = ['pendente', 'aguardando_pix', 'pago', 'enviado', 'entregue', 'cancelado', 'via_whatsapp']
 
@@ -22,11 +24,41 @@ const METHOD_LABELS = {
   whatsapp: 'WhatsApp',
 }
 
+function toCsvValue(value) {
+  const str = String(value ?? '')
+  if (/[",\n;]/.test(str)) return `"${str.replace(/"/g, '""')}"`
+  return str
+}
+
+function downloadOrdersCsv(orders) {
+  const header = ['codigo', 'data', 'cliente', 'telefone', 'status', 'metodo_pagamento', 'total', 'itens']
+  const rows = orders.map((o) => [
+    orderDisplayCode(o.id),
+    new Date(o.created_at).toLocaleString('pt-BR'),
+    o.customer_name,
+    o.customer_phone,
+    STATUS_LABELS[o.status] || o.status,
+    METHOD_LABELS[o.payment_method] || o.payment_method,
+    o.total,
+    (o.order_items || []).map((it) => `${it.quantity}x ${it.product_name}`).join(' | '),
+  ])
+
+  const csv = [header, ...rows].map((r) => r.map(toCsvValue).join(';')).join('\n')
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `pedidos-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export default function AdminPedidosPage() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [savingId, setSavingId] = useState(null)
   const [activeTab, setActiveTab] = useState('pendente')
+  const [search, setSearch] = useState('')
   // Guarda o rascunho da mensagem de envio por pedido, enquanto o admin digita.
   const [shippingDrafts, setShippingDrafts] = useState({})
   // Id do pedido cujo campo de mensagem de envio está aberto no momento.
@@ -45,14 +77,24 @@ export default function AdminPedidosPage() {
 
   useEffect(() => { load() }, [])
 
+  const filteredOrders = useMemo(() => {
+    const term = search.trim().toLowerCase()
+    if (!term) return orders
+    return orders.filter((o) =>
+      orderDisplayCode(o.id).toLowerCase().includes(term) ||
+      (o.customer_name || '').toLowerCase().includes(term) ||
+      (o.customer_phone || '').toLowerCase().includes(term)
+    )
+  }, [orders, search])
+
   const grouped = useMemo(() => {
     const map = Object.fromEntries(STATUS_OPTIONS.map((s) => [s, []]))
-    for (const o of orders) {
+    for (const o of filteredOrders) {
       if (map[o.status]) map[o.status].push(o)
       else map.pendente.push(o)
     }
     return map
-  }, [orders])
+  }, [filteredOrders])
 
   const updateStatus = async (order, status, shippingMessage) => {
     setSavingId(order.id)
@@ -88,6 +130,22 @@ export default function AdminPedidosPage() {
 
   return (
     <div>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <input
+          type="text"
+          placeholder="Buscar por código, nome ou telefone…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="input-field text-sm max-w-xs"
+        />
+        <button
+          onClick={() => downloadOrdersCsv(filteredOrders)}
+          className="btn-outline text-xs inline-flex items-center gap-2"
+        >
+          <Download size={14} /> Exportar CSV ({filteredOrders.length})
+        </button>
+      </div>
+
       <nav className="flex flex-wrap gap-2 border-b border-line mb-8 -mt-2 pb-px">
         {STATUS_OPTIONS.map((s) => (
           <button
@@ -104,7 +162,7 @@ export default function AdminPedidosPage() {
 
       {grouped[activeTab]?.length === 0 ? (
         <div className="border border-dashed border-line rounded-sm p-12 text-center text-muted">
-          Nenhum pedido em &ldquo;{STATUS_LABELS[activeTab]}&rdquo;.
+          Nenhum pedido em &ldquo;{STATUS_LABELS[activeTab]}&rdquo;{search ? ' para essa busca' : ''}.
         </div>
       ) : (
         <div className="flex flex-col gap-4">
@@ -143,15 +201,27 @@ export default function AdminPedidosPage() {
                 <div className="mt-3 text-xs bg-paperDim border border-line rounded-sm p-3 whitespace-pre-wrap">
                   <span className="font-semibold uppercase tracking-wide text-[10px] block mb-1">Mensagem de envio enviada ao cliente</span>
                   {o.shipping_message}
-                  <button
-                    onClick={() => {
-                      setShippingDrafts((prev) => ({ ...prev, [o.id]: o.shipping_message }))
-                      setOpenShippingFor(o.id)
-                    }}
-                    className="block mt-2 text-stamp font-semibold"
-                  >
-                    Editar mensagem
-                  </button>
+                  <div className="flex gap-4 mt-2">
+                    <button
+                      onClick={() => {
+                        setShippingDrafts((prev) => ({ ...prev, [o.id]: o.shipping_message }))
+                        setOpenShippingFor(o.id)
+                      }}
+                      className="text-stamp font-semibold"
+                    >
+                      Editar mensagem
+                    </button>
+                    {customerWhatsappLink(o.customer_phone, o.shipping_message) && (
+                      <a
+                        href={customerWhatsappLink(o.customer_phone, o.shipping_message)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-stamp font-semibold"
+                      >
+                        Enviar por WhatsApp
+                      </a>
+                    )}
+                  </div>
                 </div>
               )}
 

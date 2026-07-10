@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { Plus, Star } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { formatBRL } from '../lib/format'
 
@@ -38,6 +38,12 @@ export default function ProductCard({ product }) {
           </h3>
         </Link>
         {product.brand && <p className="text-sm text-muted">{product.brand}</p>}
+        {product.avg_rating && (
+          <div className="flex items-center gap-1 text-xs text-muted">
+            <Star size={12} className="fill-stamp text-stamp" />
+            {product.avg_rating.toFixed(1)} ({product.review_count})
+          </div>
+        )}
 
         <div className="flex items-center justify-between mt-3">
           <span className="font-mono font-semibold text-ink">{formatBRL(product.price)}</span>

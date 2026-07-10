@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getSupabaseAdmin } from '../../../../lib/supabaseAdmin'
+import { updateOrderStatus } from '../../../../lib/orderStatus'
 
 const STATUS_MAP = {
   approved: 'pago',
@@ -49,13 +49,11 @@ async function handleNotification(request) {
   const newStatus = STATUS_MAP[payment.status] || 'pendente'
 
   if (orderId) {
-    const supabaseAdmin = getSupabaseAdmin()
-    const { error } = await supabaseAdmin
-      .from('orders')
-      .update({ status: newStatus, mp_payment_id: String(paymentId) })
-      .eq('id', orderId)
-
-    if (error) console.error('Erro ao atualizar pedido a partir do webhook:', error.message)
+    try {
+      await updateOrderStatus(orderId, newStatus, { mp_payment_id: String(paymentId) })
+    } catch (err) {
+      console.error('Erro ao atualizar pedido a partir do webhook:', err.message)
+    }
   }
 
   return NextResponse.json({ received: true })

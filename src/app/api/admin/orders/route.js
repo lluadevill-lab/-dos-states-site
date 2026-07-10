@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAdminUser } from '../../../../lib/adminAuth'
 import { getSupabaseAdmin } from '../../../../lib/supabaseAdmin'
+import { updateOrderStatus } from '../../../../lib/orderStatus'
 
 export async function GET(request) {
   const admin = await getAdminUser(request)
@@ -25,17 +26,21 @@ export async function PUT(request) {
     return NextResponse.json({ error: 'Dados incompletos.' }, { status: 400 })
   }
 
-  const update = { status: body.status }
+  const extraFields = {}
   // A mensagem de envio (rastreio, transportadora, prazo etc.) é opcional e
   // só faz sentido guardar quando o admin manda algo — não sobrescreve com
   // vazio se o campo não vier na requisição.
   if (typeof body.shipping_message === 'string') {
-    update.shipping_message = body.shipping_message
+    extraFields.shipping_message = body.shipping_message
   }
 
-  const supabaseAdmin = getSupabaseAdmin()
-  const { error } = await supabaseAdmin.from('orders').update(update).eq('id', body.id)
+  try {
+    // updateOrderStatus também dá baixa no estoque automaticamente quando o
+    // pedido está virando "pago" pela primeira vez.
+    await updateOrderStatus(body.id, body.status, extraFields)
+  } catch (err) {
+    return NextResponse.json({ error: err.message }, { status: 400 })
+  }
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
   return NextResponse.json({ success: true })
 }
