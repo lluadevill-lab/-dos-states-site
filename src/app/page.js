@@ -59,7 +59,7 @@ export default async function HomePage() {
             <Package className="text-stamp" size={28} strokeWidth={1.75} />
             <h3 className="font-semibold text-lg">Importação</h3>
             <p className="text-muted text-sm leading-relaxed">
-              Compramos e trazemos direto dos EUA para você.
+              Compramos e enviamos direto dos EUA para você.
             </p>
           </div>
           <div className="flex flex-col gap-3 md:border-l md:pl-10 border-line">
