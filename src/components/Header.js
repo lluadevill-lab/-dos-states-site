@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { ShoppingBag, User, Menu, X } from 'lucide-react'
+import { ShoppingBag, User, Menu, X, Shield } from 'lucide-react'
 import { useCart } from '../context/CartContext'
+import { useIsAdmin } from '../lib/useIsAdmin'
 
 const NAV_LINKS = [
   { href: '/', label: 'Início' },
@@ -14,6 +15,7 @@ const NAV_LINKS = [
 
 export default function Header() {
   const { count } = useCart()
+  const { isAdmin } = useIsAdmin()
   const [open, setOpen] = useState(false)
 
   return (
@@ -31,6 +33,11 @@ export default function Header() {
               {link.label}
             </Link>
           ))}
+          {isAdmin && (
+            <Link href="/admin" className="navBarItem flex items-center gap-1 text-stamp">
+              <Shield size={15} /> Painel admin
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center gap-5">
@@ -62,6 +69,11 @@ export default function Header() {
               {link.label}
             </Link>
           ))}
+          {isAdmin && (
+            <Link href="/admin" className="navBarItem flex items-center gap-1 text-stamp" onClick={() => setOpen(false)}>
+              <Shield size={15} /> Painel admin
+            </Link>
+          )}
         </nav>
       )}
     </header>
