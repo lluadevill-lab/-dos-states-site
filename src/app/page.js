@@ -52,7 +52,7 @@ export default async function HomePage() {
 
       {/* Como funciona */}
       <section id="como-funciona" className="max-w-container mx-auto px-4 md:px-8 py-20 scroll-mt-20">
-        <p className="tracking-code mb-2">MANIFESTO DE ENVIO</p>
+        <p className="tracking-code mb-2"></p>
         <h2 className="font-display text-3xl md:text-4xl text-ink mb-12">Encomendar</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           <div className="flex flex-col gap-3">
