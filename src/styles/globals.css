@@ -2,75 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --primary: #16233D;
-  --accent: #D6A94B;
-  --danger: #C1432E;
-  --bg-light: #F8F9FA;
-  --text-dark: #211C14;
+@layer base {
+  body {
+    @apply font-sans text-primeColor bg-white;
+  }
 }
 
-body {
-  background-color: white;
-  color: var(--text-dark);
-  font-family: 'Work Sans', sans-serif;
+.container {
+  @apply max-w-container mx-auto px-4;
 }
 
-.stencil { font-family: 'Big Shoulders Stencil', sans-serif; }
-.mono { font-family: 'IBM Plex Mono', monospace; }
-
-/* Header Moderno */
-.header-sticky {
-  position: sticky; top: 0; z-index: 100;
-  background: white;
-  border-bottom: 1px solid #eee;
-}
-
-/* Cards de Produto Estilo Shopee/Orebishopping */
-.product-card {
-  background: white;
-  border: 1px solid #f0f0f0;
-  transition: all 0.3s ease;
-  position: relative;
-}
-.product-card:hover {
-  box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-  transform: translateY(-5px);
-}
-
-.img-placeholder {
-  background: #f9f9f9;
-  height: 250px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ddd;
-  font-size: 10px;
-}
-
-/* Feedback de Adição */
-.toast-success {
-  position: fixed; bottom: 20px; right: 20px;
-  background: var(--primary); color: white;
-  padding: 15px 25px; border-radius: 4px;
-  z-index: 1000; animation: slideUp 0.3s ease;
-}
-
-@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-
-/* Botões */
-.btn-primary {
-  background: var(--primary); color: white;
-  padding: 12px 24px; font-weight: 600; text-transform: uppercase;
-  transition: opacity 0.2s;
-}
-.btn-primary:hover { opacity: 0.9; }
-
-/* Tabs do Perfil */
-.tab-btn {
-  padding: 10px 20px; border-bottom: 2px solid transparent;
-  font-weight: 500; color: #888;
-}
-.tab-btn.active {
-  border-color: var(--accent); color: var(--primary);
+/* Custom styles matching Orebishopping */
+.navBarItem {
+  @apply flex font-normal hover:font-bold items-center text-base text-[#767676] hover:text-primeColor decoration-[1px] decoration-gray-500 underline-offset-[4px] cursor-pointer duration-300;
 }
