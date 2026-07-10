@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans text-primeColor bg-white;
+  }
+}
+
+.container {
+  @apply max-w-container mx-auto px-4;
+}
+
+/* Custom styles matching Orebishopping */
+.navBarItem {
+  @apply flex font-normal hover:font-bold items-center text-base text-[#767676] hover:text-primeColor decoration-[1px] decoration-gray-500 underline-offset-[4px] cursor-pointer duration-300;
+}
