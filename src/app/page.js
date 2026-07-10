@@ -39,7 +39,7 @@ export default async function HomePage() {
             </p>
             <div className="flex flex-wrap gap-4">
               <Link href="/loja" className="btn-primary">Ver loja</Link>
-              <Link href="/#como-funciona" className="btn-outline">Encomendar</Link>
+              <Link href="/#encomendar" className="btn-outline">Encomendar</Link>
             </div>
           </div>
           <div className="hidden md:flex items-center justify-center">
@@ -50,8 +50,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Como funciona */}
-      <section id="como-funciona" className="max-w-container mx-auto px-4 md:px-8 py-20 scroll-mt-20">
+      {/* Encomendar */}
+      <section id="encomendar" className="max-w-container mx-auto px-4 md:px-8 py-20 scroll-mt-20">
         <p className="tracking-code mb-2"></p>
         <h2 className="font-display text-3xl md:text-4xl text-ink mb-12">Encomendar</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
@@ -59,7 +59,7 @@ export default async function HomePage() {
             <Package className="text-stamp" size={28} strokeWidth={1.75} />
             <h3 className="font-semibold text-lg">Importação</h3>
             <p className="text-muted text-sm leading-relaxed">
-              Compramos e enviamos direto dos EUA para você.
+              Você escolhe os produtos, nós compramos e enviamos direto dos EUA para você.
             </p>
           </div>
           <div className="flex flex-col gap-3 md:border-l md:pl-10 border-line">
