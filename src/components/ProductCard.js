@@ -31,7 +31,6 @@ export default function ProductCard({ product }) {
       </Link>
 
       <div className="flex flex-col gap-1 px-4 py-4">
-        {product.code && <span className="tracking-code">{product.code}</span>}
         <Link href={`/produto/${product.slug}`}>
           <h3 className="font-semibold text-ink leading-snug hover:text-stamp transition-colors line-clamp-2">
             {product.name}

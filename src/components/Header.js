@@ -9,7 +9,7 @@ import { useIsAdmin } from '../lib/useIsAdmin'
 const NAV_LINKS = [
   { href: '/', label: 'Início' },
   { href: '/loja', label: 'Loja' },
-  { href: '/#como-funciona', label: 'Como funciona' },
+  { href: '/como-funciona', label: 'Como funciona' },
   { href: '/conta', label: 'Minha conta' },
 ]
 

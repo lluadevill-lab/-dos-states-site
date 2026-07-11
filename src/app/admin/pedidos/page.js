@@ -30,7 +30,7 @@ function toCsvValue(value) {
   return str
 }
 
-function downloadOrdersCsv(orders) {
+function downloadOrdersCsv(orders, labelForFilename = '') {
   const header = ['codigo', 'data', 'cliente', 'telefone', 'status', 'metodo_pagamento', 'total', 'itens']
   const rows = orders.map((o) => [
     orderDisplayCode(o.id),
@@ -48,7 +48,10 @@ function downloadOrdersCsv(orders) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `pedidos-${new Date().toISOString().slice(0, 10)}.csv`
+  const suffix = labelForFilename
+    ? '-' + labelForFilename.toLowerCase().replace(/\s+/g, '_')
+    : ''
+  a.download = `pedidos${suffix}-${new Date().toISOString().slice(0, 10)}.csv`
   a.click()
   URL.revokeObjectURL(url)
 }
@@ -59,6 +62,8 @@ export default function AdminPedidosPage() {
   const [savingId, setSavingId] = useState(null)
   const [activeTab, setActiveTab] = useState('pendente')
   const [search, setSearch] = useState('')
+  const [exportOpen, setExportOpen] = useState(false)
+  const [exportStatuses, setExportStatuses] = useState([])
   // Guarda o rascunho da mensagem de envio por pedido, enquanto o admin digita.
   const [shippingDrafts, setShippingDrafts] = useState({})
   // Id do pedido cujo campo de mensagem de envio está aberto no momento.
@@ -86,6 +91,23 @@ export default function AdminPedidosPage() {
       (o.customer_phone || '').toLowerCase().includes(term)
     )
   }, [orders, search])
+
+  const toggleExportStatus = (status) => {
+    setExportStatuses((prev) =>
+      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
+    )
+  }
+
+  const exportSelected = () => {
+    const statusesToUse = exportStatuses.length ? exportStatuses : [activeTab]
+    const ordersToExport = filteredOrders.filter((o) => statusesToUse.includes(o.status))
+    if (ordersToExport.length === 0) {
+      alert('Nenhum pedido encontrado para as abas selecionadas.')
+      return
+    }
+    downloadOrdersCsv(ordersToExport, statusesToUse.map((s) => STATUS_LABELS[s]).join('-'))
+    setExportOpen(false)
+  }
 
   const grouped = useMemo(() => {
     const map = Object.fromEntries(STATUS_OPTIONS.map((s) => [s, []]))
@@ -130,7 +152,7 @@ export default function AdminPedidosPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 relative">
         <input
           type="text"
           placeholder="Buscar por código, nome ou telefone…"
@@ -138,12 +160,40 @@ export default function AdminPedidosPage() {
           onChange={(e) => setSearch(e.target.value)}
           className="input-field text-sm max-w-xs"
         />
-        <button
-          onClick={() => downloadOrdersCsv(filteredOrders)}
-          className="btn-outline text-xs inline-flex items-center gap-2"
-        >
-          <Download size={14} /> Exportar CSV ({filteredOrders.length})
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setExportOpen((v) => !v)}
+            className="btn-outline text-xs inline-flex items-center gap-2"
+          >
+            <Download size={14} /> Exportar CSV
+          </button>
+
+          {exportOpen && (
+            <div className="absolute right-0 mt-2 w-72 bg-paper border border-line rounded-sm p-4 shadow-lg z-10">
+              <p className="text-xs font-semibold uppercase tracking-wide mb-3">
+                Escolha as abas pra juntar num CSV
+              </p>
+              <div className="flex flex-col gap-2 mb-4 max-h-56 overflow-y-auto">
+                {STATUS_OPTIONS.map((s) => (
+                  <label key={s} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={exportStatuses.includes(s)}
+                      onChange={() => toggleExportStatus(s)}
+                    />
+                    {STATUS_LABELS[s]} ({grouped[s]?.length ?? 0})
+                  </label>
+                ))}
+              </div>
+              <p className="text-[11px] text-muted mb-3">
+                Nenhuma marcada = exporta só a aba aberta agora ({STATUS_LABELS[activeTab]}).
+              </p>
+              <button onClick={exportSelected} className="btn-primary text-xs w-full">
+                Baixar CSV
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <nav className="flex flex-wrap gap-2 border-b border-line mb-8 -mt-2 pb-px">

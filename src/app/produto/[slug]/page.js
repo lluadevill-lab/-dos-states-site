@@ -51,7 +51,6 @@ export default async function ProdutoPage({ params }) {
       </div>
 
       <div className="flex flex-col gap-5">
-        {product.code && <span className="tracking-code">{product.code}</span>}
         {product.badge && <span className="stamp-badge w-fit">{product.badge}</span>}
         <h1 className="font-display text-3xl md:text-4xl text-ink leading-tight">{product.name}</h1>
         {product.brand && <p className="text-muted">{product.brand}</p>}
