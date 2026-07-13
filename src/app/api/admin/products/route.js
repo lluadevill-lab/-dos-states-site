@@ -2,6 +2,20 @@ import { NextResponse } from 'next/server'
 import { getAdminUser } from '../../../../lib/adminAuth'
 import { getSupabaseAdmin } from '../../../../lib/supabaseAdmin'
 
+export async function GET(request) {
+  const admin = await getAdminUser(request)
+  if (!admin) return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 })
+
+  const supabaseAdmin = getSupabaseAdmin()
+  const { data, error } = await supabaseAdmin
+    .from('products')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+  return NextResponse.json({ products: data })
+}
+
 export async function POST(request) {
   const admin = await getAdminUser(request)
   if (!admin) return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 })

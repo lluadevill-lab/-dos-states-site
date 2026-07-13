@@ -22,8 +22,8 @@ export default function AdminKitsPage() {
       fetch('/api/admin/kits', { headers: { Authorization: `Bearer ${session?.access_token}` } }),
       fetch('/api/admin/products', { headers: { Authorization: `Bearer ${session?.access_token}` } }),
     ])
-    setBundles((await bundlesRes.json()).bundles || [])
-    setProducts((await productsRes.json()).products || [])
+    if (bundlesRes.ok) setBundles((await bundlesRes.json()).bundles || [])
+    if (productsRes.ok) setProducts((await productsRes.json()).products || [])
     setLoading(false)
   }
 
