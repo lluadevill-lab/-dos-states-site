@@ -17,13 +17,22 @@ export default function FavoritosPage() {
     setProductsLoading(true)
     supabase
       .from('favorites')
-      .select('product_id, products(*)')
+      .select('product_id')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .then(async ({ data, error }) => {
         if (error) { console.error(error.message); setProductsLoading(false); return }
-        const items = (data || []).map((f) => f.products).filter(Boolean)
-        setProducts(await attachRatings(items))
+        const ids = (data || []).map((f) => f.product_id)
+        if (!ids.length) { setProducts([]); setProductsLoading(false); return }
+        const { data: productsData, error: productsError } = await supabase
+          .from('products')
+          .select('*')
+          .in('id', ids)
+        if (productsError) { console.error(productsError.message); setProductsLoading(false); return }
+        // Mantém a ordem de "favoritado mais recente primeiro".
+        const byId = Object.fromEntries((productsData || []).map((p) => [p.id, p]))
+        const ordered = ids.map((id) => byId[id]).filter(Boolean)
+        setProducts(await attachRatings(ordered))
         setProductsLoading(false)
       })
   }, [user])
