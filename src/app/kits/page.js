@@ -14,10 +14,35 @@ export default function KitsPage() {
   useEffect(() => {
     supabase
       .from('bundles')
-      .select('*, bundle_items(quantity, products(name))')
+      .select('*')
       .eq('active', true)
       .order('created_at', { ascending: false })
-      .then(({ data }) => { setBundles(data || []); setLoading(false) })
+      .then(async ({ data: bundlesData, error }) => {
+        if (error) { console.error('Erro ao buscar kits:', error.message); setLoading(false); return }
+        const bundleIds = (bundlesData || []).map((b) => b.id)
+        if (!bundleIds.length) { setBundles([]); setLoading(false); return }
+
+        const { data: items } = await supabase
+          .from('bundle_items')
+          .select('bundle_id, quantity, product_id')
+          .in('bundle_id', bundleIds)
+
+        const productIds = [...new Set((items || []).map((i) => i.product_id))]
+        const { data: products } = productIds.length
+          ? await supabase.from('products').select('id, name').in('id', productIds)
+          : { data: [] }
+        const productById = Object.fromEntries((products || []).map((p) => [p.id, p]))
+
+        const itemsByBundle = {}
+        for (const it of items || []) {
+          if (!itemsByBundle[it.bundle_id]) itemsByBundle[it.bundle_id] = []
+          itemsByBundle[it.bundle_id].push({ quantity: it.quantity, products: productById[it.product_id] })
+        }
+
+        const merged = (bundlesData || []).map((b) => ({ ...b, bundle_items: itemsByBundle[b.id] || [] }))
+        setBundles(merged)
+        setLoading(false)
+      })
   }, [])
 
   return (

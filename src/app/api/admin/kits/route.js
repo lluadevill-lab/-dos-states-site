@@ -7,13 +7,35 @@ export async function GET(request) {
   if (!admin) return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 })
 
   const supabaseAdmin = getSupabaseAdmin()
-  const { data, error } = await supabaseAdmin
+  const { data: bundles, error } = await supabaseAdmin
     .from('bundles')
-    .select('*, bundle_items(id, quantity, product_id, products(name, price, image_url))')
+    .select('*')
     .order('created_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
-  return NextResponse.json({ bundles: data })
+
+  const bundleIds = (bundles || []).map((b) => b.id)
+  let itemsByBundle = {}
+  if (bundleIds.length) {
+    const { data: items } = await supabaseAdmin
+      .from('bundle_items')
+      .select('id, bundle_id, quantity, product_id')
+      .in('bundle_id', bundleIds)
+
+    const productIds = [...new Set((items || []).map((i) => i.product_id))]
+    const { data: products } = productIds.length
+      ? await supabaseAdmin.from('products').select('id, name, price, image_url').in('id', productIds)
+      : { data: [] }
+    const productById = Object.fromEntries((products || []).map((p) => [p.id, p]))
+
+    for (const it of items || []) {
+      if (!itemsByBundle[it.bundle_id]) itemsByBundle[it.bundle_id] = []
+      itemsByBundle[it.bundle_id].push({ id: it.id, quantity: it.quantity, product_id: it.product_id, products: productById[it.product_id] })
+    }
+  }
+
+  const merged = (bundles || []).map((b) => ({ ...b, bundle_items: itemsByBundle[b.id] || [] }))
+  return NextResponse.json({ bundles: merged })
 }
 
 export async function POST(request) {

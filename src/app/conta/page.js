@@ -209,12 +209,32 @@ export default function ContaPage() {
     setOrdersLoading(true)
     supabase
       .from('orders')
-      .select('id, created_at, status, total, payment_method, shipping_message, order_items(id, product_name, quantity, reviews(id))')
+      .select('id, created_at, status, total, payment_method, shipping_message, order_items(id, product_name, quantity)')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (error) console.error('Erro ao buscar pedidos:', error.message)
-        setOrders(data || [])
+      .then(async ({ data, error }) => {
+        if (error) { console.error('Erro ao buscar pedidos:', error.message); setOrders([]); setOrdersLoading(false); return }
+
+        const itemIds = (data || []).flatMap((o) => (o.order_items || []).map((it) => it.id))
+        let reviewedIds = new Set()
+        if (itemIds.length) {
+          const { data: reviews, error: reviewsError } = await supabase
+            .from('reviews')
+            .select('order_item_id')
+            .in('order_item_id', itemIds)
+          if (reviewsError) console.error('Erro ao buscar avaliações:', reviewsError.message)
+          reviewedIds = new Set((reviews || []).map((r) => r.order_item_id))
+        }
+
+        const withReviewFlag = (data || []).map((o) => ({
+          ...o,
+          order_items: (o.order_items || []).map((it) => ({
+            ...it,
+            reviews: reviewedIds.has(it.id) ? [{ id: true }] : [],
+          })),
+        }))
+
+        setOrders(withReviewFlag)
         setOrdersLoading(false)
       })
   }

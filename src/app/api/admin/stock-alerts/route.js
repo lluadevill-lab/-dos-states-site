@@ -7,13 +7,21 @@ export async function GET(request) {
   if (!admin) return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 })
 
   const supabaseAdmin = getSupabaseAdmin()
-  const { data, error } = await supabaseAdmin
+  const { data: alerts, error } = await supabaseAdmin
     .from('stock_alerts')
-    .select('*, products(name, stock)')
+    .select('*')
     .order('created_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
-  return NextResponse.json({ alerts: data })
+
+  const productIds = [...new Set((alerts || []).map((a) => a.product_id))]
+  const { data: products } = productIds.length
+    ? await supabaseAdmin.from('products').select('id, name, stock').in('id', productIds)
+    : { data: [] }
+  const productById = Object.fromEntries((products || []).map((p) => [p.id, p]))
+
+  const merged = (alerts || []).map((a) => ({ ...a, products: productById[a.product_id] || null }))
+  return NextResponse.json({ alerts: merged })
 }
 
 export async function PUT(request) {
